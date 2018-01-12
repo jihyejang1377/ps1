@@ -1,0 +1,530 @@
+---
+title: "ps1"
+author: "JIHYE JANG"
+date: "1/11/2018"
+output: 
+  html_document:
+    number_sections: true
+---
+# 1 R for Data Science Exercises
+## 1.1 Intro
+1. Who did you work with?
+Annie Gao, Guillermo Ortiz
+
+## 1.2 - 3.6.1
+1. What geom would you use to draw a line chart? A boxplot? A histogram? An area chart?
+geom_smooth(), geom_boxplot(), geom_histogram(), geom_area() 
+
+2. What does show.legend = FALSE do? What happens if you remove it?
+Why do you think I used it earlier in the chapter?
+it is a logical code, decides if this layer should be included or not. 
+NA, the default, includes if any aesthetics are mapped. FALSE never includes, and TRUE always includes.   
+Because it is redundant sometimes when the graph itself is very clear
+
+3. What does the se argument to geom_smooth() do?
+display confidence interval around smooth (TRUE by default, use level to control)
+
+4. Will these two graphs look different? Why/why not?
+```{r}
+library(ggplot2)
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) +
+  geom_point() +
+  geom_smooth()
+```
+
+```{r}
+ggplot() +
+  geom_point(data = mpg, mapping = aes(x = displ, y = hwy)) +
+  geom_smooth(data = mpg, mapping = aes(x = displ, y = hwy))  
+```    
+
+they are the same. the only difference is that the first one specified mapping in ggplot, the second one did seprately in geom_point() and geom_smooth()
+
+## 1.2.1 - 3.7.1
+1. What is the default geom associated with stat_summary()? How could you rewrite the previous plot to use that geom function instead of the stat function?
+The default is geom_pointrange(). 
+
+```{r}
+ggplot(data = diamonds) +
+  geom_pointrange(mapping = aes(x = cut, y = depth),
+                  stat = "summary",
+                  fun.ymin = min,
+                  fun.ymax = max,
+                  fun.y = median)
+```
+
+2. What does geom_col() do? How is it different to geom_bar()?
+In the geom_col(), the heights of the bars represent values in the data.In the contrary, geom_bar makes the height of the bar proportional to the number of cases in each group. geom_bar uses stat_count by default: it counts the number of cases at each x position. geom_col uses stat_identity
+Thus, geom_bar(stat = "identity") and geom_col() are the same.
+
+3. Most geoms and stats come in pairs that are almost always used in concert. Read through the documentation and make a list of all the pairs. What do they have in common?
+geom_bar / stat_count
+geom_boxplot/ stat_boxplot
+geom_count / stat_sum
+geom_smooth / stat_summary
+
+they often work as each other's layer
+
+such as following:
+geom_bar(mapping = NULL, data = NULL, stat = "count",
+position = "stack", ..., width = NULL, binwidth = NULL, na.rm = FALSE,
+show.legend = NA, inherit.aes = TRUE)
+
+position = "stack", ..., width = NULL, na.rm = FALSE,
+show.legend = NA, inherit.aes = TRUE)
+
+4. What variables does stat_smooth() compute? What parameters control its behaviour?
+Computed variables
+y-predicted value
+ymin-lower pointwise confidence interval around the mean
+ymax-upper pointwise confidence interval around the mean
+se-standard error
+
+parameter: method, formula, se, na.rm, show.legend, inherit.aes, span, level, etc. See ?stat_smooth
+
+5. In our proportion bar chart, we need to set group = 1. Why? In other words what is the problem with these two graphs?
+
+```{r}
+ggplot(data = diamonds) +
+  geom_bar(mapping = aes(x = cut, y = ..prop..))
+
+ggplot(data = diamonds) +
+  geom_bar(mapping = aes(x = cut, fill = color, y = ..prop..))
+
+ggplot(data = diamonds) +
+  geom_bar(mapping = aes(x = cut, fill = color, y = ..prop.., group = 1))
+```     
+
+without group = 1, the graphs show the sum (no sub-graphs based on the variation of group) so they do not give the grapgh with proportional representations that we want.
+
+## 1.3 - 3.8.1
+1. What is the problem with this plot? How could you improve it?
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) +
+  geom_point()
+```     
+
+the number of points are little compared to the dataset, it is because many points overlap. we can use geom_jitter() instead.   
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_jitter()
+```
+
+2. What parameters to geom_jitter() control the amount of jittering?
+Width and height control the amount of vertical and horizontal jitter.
+
+3. Compare and contrast geom_jitter() with geom_count().
+```{r}
+ggplot(mpg, aes(cty, hwy)) +
+  geom_point()
+  
+ggplot(mpg, aes(cty, hwy)) +
+  geom_jitter()
+  
+ggplot(mpg, aes(cty, hwy)) +
+  geom_count()
+```     
+
+geom_count() is a variant geom_point that counts the number of observations at each location, then maps the count to point area. It useful when you have discrete data and overplotting. for geom_jitter, the width and height of the point indicates the density while for geom_count, the size of the point is a discrete variable
+
+4. What is the default position adjustment for geom_boxplot()? Create a visualisation of the mpg dataset that demonstrates it.   
+
+```{r}
+ggplot(mpg, aes(class, hwy,group=class)) +
+  geom_boxplot(position = "dodge")
+```    
+
+it is position_dodge()
+
+## 1.4 - 3.9.1
+1. Turn a stacked bar chart into a pie chart using coord_polar().
+```{r}
+ggplot(data = mpg, mapping = aes(x = factor(1), fill = class)) +
+  geom_bar(width = 1) 
+
+ggplot(data = mpg, mapping = aes(x = factor(1), fill = class)) +
+  geom_bar(width = 1) +
+  coord_polar(theta = "y")
+```
+
+2. What does labs() do? Read the documentation.    
+
+we can add title, subtitle and caption.
+
+3. What???s the difference between coord_quickmap() and coord_map()?
+coord_map projects a portion of the earth, which is approximately spherical, onto a flat 2D plane using any projection defined by the mapproj package. Map projections do not, in general, preserve straight lines, so this requires considerable computation. coord_quickmap is a quick approximation that does preserve straight lines. It works best for smaller areas closer to the equator.
+
+install.packages("mapproj")
+nz <- map_data("nz")
+
+
+
+```{r}
+nz <- map_data("nz")
+nzmap <- ggplot(nz, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = "white", colour = "black")
+nzmap + coord_map()
+```
+```{r}
+nzmap + coord_quickmap()
+```
+
+4. What does the plot below tell you about the relationship between city and highway mpg? Why is coord_fixed() important? What does geom_abline() do?
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) +
+geom_point() +
+geom_abline() +
+coord_fixed()
+```   
+
+the relationship between city and highway is linear with slope higher than 1.   
+
+coord_fixed(), A fixed scale coordinate system forces a specified ratio between the physical representation of data units on the axes. The ratio represents the number of units on the y-axis equivalent to one unit on the x-axis. The default, ratio = 1, ensures that one unit on the x-axis is the same length as one unit on the y-axis.
+
+geom_abline() add reference lines and default is intercept 0 and slope 1. this is useful as this line shows that the data has linear relationship with slope slightly higher than 1.
+
+## 1.5 - 4.4
+1. Why does this code not work?
+
+problem in spelling, in second one "i" is replaced by some other letter
+
+2. Tweak each of the following R commands so that they run correctly:
+library(tidyverse)
+ggplot(dota = mpg) +
+geom_point(mapping = aes(x = displ, y = hwy))
+fliter(mpg, cyl = 8)
+filter(diamond, carat > 3)
+
+```{r}
+library("tidyverse")
+
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy))
+
+filter(mpg, cyl == 8)
+filter(diamonds, carat > 3)
+```
+
+3. Press Alt + Shift + K. What happens? How can you get to the same place using the menus?
+keyboard shortcut quick reference
+Tools - keyboard shortcut help
+
+## 1.6 - 5.2.4
+Using the nycflights13 library, find all flights that
+
+1. Had an arrival delay of two or more hours
+```{r}
+library(nycflights13)
+nycflights <- nycflights13::flights
+filter(nycflights, arr_delay >= 120)
+```   
+
+2. Flew to Houston (IAH or HOU)
+```{r}
+filter(nycflights, dest == "IAH" | dest =="HOU")
+```
+
+3. Were operated by United, American, or Delta
+```{r}
+filter(nycflights, carrier == "UA" | carrier =="AA" | carrier =="DL")
+```
+
+4. Departed in summer (July, August, and September)
+```{r}
+filter(nycflights, month == 7 | month == 8 | month == 9)
+```
+
+5. Arrived more than two hours late, but didn't leave late
+```{r}
+filter(nycflights, dep_delay <= 0 & arr_delay > 120)
+```
+
+6. Were delayed by at least an hour, but made up over 30 minutes in flight
+```{r}
+filter(nycflights, dep_delay >= 60 & arr_delay < dep_delay - 30)
+```
+
+7. Departed between midnight and 6am (inclusive)
+```{r}
+filter(nycflights, dep_time<600 | dep_time >= 0)
+```
+
+2. Another useful dplyr filtering helper is between(). What does it do? Can you use it to simplify theccode needed to answer the previous challenges?
+```{r}
+filter(nycflights, between(month, 7, 9))
+filter(nycflights, between(dep_time, 0, 600))
+```
+
+3. How many flights have a missing dep_time? What other variables are missing? What might these rows represent?
+```{r}
+filter(nycflights, is.na(dep_time))
+```   
+8255 flights.   
+
+
+```{r}
+for (Var in names(nycflights)) {
+    missing <- sum(is.na(nycflights[,Var]))
+    if (missing > 0) {
+        print(c(Var,missing))
+    }
+}
+```   
+variables with missing values are:
+[1] "dep_time" "8255"    
+[1] "dep_delay" "8255"     
+[1] "arr_time" "8713"    
+[1] "arr_delay" "9430"     
+[1] "tailnum" "2512"   
+[1] "air_time" "9430"
+
+4. Why is NA ?? 0 not missing? Why is NA | TRUE not missing? Why is FALSE & NA not missing? Can you figure out the general rule? (NA * 0 is a tricky counterexample!)   
+
+NA ^ 0 - na to the 0th power is 1.   
+NA | TRUE - condition is TRUE, the result is TRUE   
+FALSE & NA - there's no value that satisfies this, but it is recorded as 0 results rather than missing   
+NA is missing value.so NA * 0 is NA. 
+
+## 1.7 - 5.3.1
+1. How could you use arrange() to sort all missing values to the start? (Hint: use is.na()).
+```{r}
+arrange(nycflights, !is.na(dep_time))
+```   
+
+2. Sort flights to find the most delayed flights by arrival time.
+```{r}
+arrange(nycflights, desc(arr_delay))
+```   
+
+3. Find the flights that left earliest relative to their scheduled departure.
+```{r}
+arrange(nycflights, dep_delay)
+```
+
+4. Sort flights to find the shortest amount of time actually in the air.
+```{r}
+arrange(nycflights, air_time)
+```
+
+## 1.8 - 5.4.1
+1. Brainstorm as many ways as possible to select dep_time, dep_delay, arr_time, and arr_delay from flights.
+```{r}
+select(flights, dep_time, dep_delay, arr_time, arr_delay)
+select(flights, starts_with("dep"), starts_with("arr"))
+select(flights, dep_time, arr_time, ends_with("delay"))
+select(flights, dep_time, arr_time, contains("delay"))
+```   
+
+2. What happens if you include the name of a variable multiple times in a select() call?
+```{r}
+select(flights, dep_time, dep_time, dep_time, dep_time)
+``` 
+no difference with the case with the variable included only one time   
+
+3. What does the one_of() function do? Why might it be helpful in conjunction with this vector?
+```{r}
+vars <- c("year", "month", "day", "dep_delay", "arr_delay")
+select(nycflights, one_of(vars))
+```   
+it selects variables with matching names in the list
+
+4. Does the result of running the following code surprise you? How do the select helpers deal with case by default? How can you change that default?
+
+```{r}
+select(nycflights, contains("TIME"))
+```
+by default, case is insensitive.   
+
+we can change it to:
+```{r}
+select(nycflights, contains("TIME", ignore.case = FALSE))
+```
+
+
+## 1.9 - 5.5.2
+1. Currently dep_time and sched_dep_time are convenient to look at, but hard to compute with because they???re not really continuous numbers. Convert them to a more convenient representation of number of minutes since midnight.
+```{r}
+transmute(nycflights, dep_time = floor(dep_time / 100) * 60 + (dep_time - floor(dep_time /100) * 100), sched_dep_time = floor(sched_dep_time / 100) * 60 + (sched_dep_time - floor(sched_dep_time /100) * 100))
+```
+
+2. Compare air_time with arr_time - dep_time. What do you expect to see? What do you see? What do you need to do to fix it?
+```{r}
+nycflights_airtime <- select(flights, air_time, arr_time, dep_time)
+mutate(nycflights_airtime, air_time2 = arr_time - dep_time)
+```   
+they don't correspond to each other, because arr_time and dep_time are recorded in clock time and air_time is recorded in minute. we need to convert them into minite. 
+
+3. Implement your fix. Remake the plot from the previous question.
+```{r}
+nycflights_mintime <- transmute(nycflights, dep_time = floor(dep_time / 100) * 60 + (dep_time - floor(dep_time /100) * 100), arr_time = floor(arr_time / 100) * 60 + (arr_time - floor(arr_time /100) * 100), air_time)
+
+nycflights_mintime <- mutate(nycflights_mintime, air_time2 = arr_time - dep_time)
+
+```
+they still do not correspond. 
+
+4. Suggest and justify with words an error tolerance in minutes, meaning that if air_time is too far off from arr_time - dep_time then we assume one of the columns contains an error. After implementing
+your fix, what fraction of observations still appear to have an error?
+```{r}
+
+nycflights_mintime <- mutate(nycflights_mintime, diff = air_time2 - air_time)
+
+```
+1. first we need to consider time difference.    
+2. An error tolerance is 15 minutes because to be counted as delay, min 15 min has to pass compared to schduled time.  
+
+
+5. Compare dep_time, sched_dep_time, and dep_delay. How would you expect those three numbers to be related?
+after changing their forms into min like what we did in the previous problem, we should expect: dep_time = sched_dep_time + dep_delay 
+
+6. Find the 10 most delayed flights using a ranking function. How do you want to handle ties? Carefully read the documentation for min_rank().
+```{r}
+delay_rank <- mutate(nycflights, delay = min_rank(desc(arr_delay)))
+arrange(delay_rank, delay) 
+
+delay_rank <- mutate(nycflights, delay = row_number(desc(arr_delay)))
+arrange(delay_rank, delay) 
+```
+row_number: ties.method is first 
+min_rank: ties.method is min
+but in this case these two yield the same outcome
+
+7. What does 1:3 + 1:10 return? Why?
+```{r}
+ 1:3 + 1:10
+```
+Two vectors are not of the same length, so the first vector is added multiple times
+
+# 2 Public Sector Application: Flight Data
+## 2.1 Download BTS data
+
+```{r}
+setwd('/Users/JihyeJang/Downloads/pset 1')
+```
+
+??? Read it into R using chi.flights <- read_csv("data.csv") and use the bind_rows command to stitch together the monthly files into a yearlong file.
+```{r}
+chi.flights1 <- read_csv("856185449_T_ONTIME.csv")
+chi.flights2 <- read_csv("856185449_T_ONTIME 2.csv")
+chi.flights3 <- read_csv("856185449_T_ONTIME 3.csv")
+chi.flights4 <- read_csv("856185449_T_ONTIME 4.csv")
+chi.flights5 <- read_csv("856185449_T_ONTIME 5.csv")
+chi.flights6 <- read_csv("856185449_T_ONTIME 6.csv")
+chi.flights7 <- read_csv("856185449_T_ONTIME 7.csv")
+chi.flights8 <- read_csv("856185449_T_ONTIME 8.csv")
+chi.flights9 <- read_csv("856185449_T_ONTIME 9.csv")
+chi.flights10 <- read_csv("856185449_T_ONTIME 10.csv")
+chi.flights11 <- read_csv("856185449_T_ONTIME 11.csv")
+chi.flights12 <- read_csv("856185449_T_ONTIME 12.csv")
+
+chi_flights <- bind_rows(chi.flights1, chi.flights2, chi.flights3, chi.flights4, chi.flights5, chi.flights6, chi.flights7, chi.flights8, chi.flights9, chi.flights10, chi.flights11, chi.flights12)
+```
+## 2.2 Data Description
+1. What is the unique identifier for each flight in the dataset?
+There is no exisiting unique identifier for each flight in the dataset, but we can consturct one with flight date, carrier number and flight number. 
+
+2. R has six description methods: print, head, str, glimpse, View, summary. Apply them to chi_flights
+1. Are any of the methods redundant, in the sense that you don???t learn anything from these commands that you didn???t already know from the prior methods? Make a list of the non-redundant methods
+
+  non-redundant: print / str / View / summary 
+  head and glimpse are redundant because it is similar to print but show no    new information
+
+2. Of the non-redundant methods, say one thing that you learned about the data from each method.
+
+  a. print shows classes variables (incomplete) and numbers of rows and          columns
+  b. str shows every variables as opposed to print and head
+  c. View shows the data
+  d.summary shows length, class and other statistical characteristics like      mean, max and median
+
+3. Propose a short cheat sheet (max 2 lines per command) for the non-redundant methods
+  a. print(x, ...) different method for class 'factor', 'table' and 'function'
+  b. str(object, ...)
+  c. View(x, title)
+  d. summary(object, ...)
+
+## 2.3 Data Validation
+1. You should have 675822 rows when you downloaded data for Illinois. Load the package testthat and then test that you have this many rows using the command test_that(expect_equal(nrows(data),675822))
+
+install.packages("testthat")
+
+```{r }
+library("testthat")
+test_that("row number test", {
+  expect_equal(nrow(chi_flights),675822)
+})
+```
+
+2. Because of the conditions you put into the webform, all flights should be to or from Illinois airports.
+Let???s check this.
+
+```{r }
+orig_dest <- subset(chi_flights, select = c(ORIGIN_STATE_ABR, DEST_STATE_ABR))
+
+filter(orig_dest, ORIGIN_STATE_ABR == "IL" | DEST_STATE_ABR == "IL")
+```
+
+It is 675,822 rows so we proved that all flights are to or from Illinois airports.
+
+3. Drop flights to Midway and Ohare. How many flights are left?
+```{r }
+chi_flights2 <- filter(chi_flights, DEST == "ORD" | DEST == "MDW")
+```
+331691 are left.
+
+4. Among flights whose origin or destination is not Midway or Ohare, what are the five most common origins? What are the five most common destinations? Where are these cities? Are these origins and
+destinations inside or outside Illinois? Can you explain why these are the most common origins and destinations?
+```{r }
+nonchi_flights <- filter(chi_flights, (ORIGIN != "ORD" & ORIGIN != "MDW") & (DEST != "ORD" & DEST != "MDW") )
+
+```
+12240 observations.
+
+install.packages("plyr")
+
+```{r }
+library("plyr")
+count(nonchi_flights, 'ORIGIN')
+count(nonchi_flights, 'DEST')
+```
+five most common origins are ATL, PIA, MLI, BMI, DTW
+five most common destinations are ATL, PIA, MLI, BMI, DTW
+Atlanta, Peoria, Moline, Bloomington/Normal,Detroit
+Atlanta and Detroit are outside of IL.
+
+
+5. Next, limit the sample to flights to or from Midway and Ohare.
+  1. How many rows do you think the dataset should have, approximately? Find at least two websites that estimate the number of flights into each airport. Do these estimates agree with what is in the BTS dataset? Do these estimates agree with each other? If they disagree, why do you think they disagree?
+ 
+```{r}
+chicago <- filter(chi_flights, ORIGIN == "ORD" | DEST =="ORD" | DEST == "MDW" | ORIGIN == "MDW")
+```
+663582 rows.
+
+Two websites: 
+  1)Bureau of transportation statistics
+  https://www.transtats.bts.gov/airports.asp?pn=1
+  2)Chicago department of Aviation. 
+  http://www.flychicago.com/business/CDA/factsfigures/Pages/airtraffic.aspx
+  They are slightly different. because bureau of transportation statistics only shows the scheduled flight numbers as opposed to actually delivered flight numbers.
+
+6. Google to figure out the three highest-volume airlines at Ohare and the three highest-volume airlines out of Midway. Does this agree with what you find in the BTS data? If they disagree, why do you think they disagree?   
+
+From Bureau of Statistics:   
+
+Ohare: United(UA), American(AA), Envoy(EV)   
+
+Midway:Southwest(WN), Delta(DL), ExpressJet (EV)   
+
+```{r}
+MDW_outflights <- filter(chi_flights, ORIGIN == "MDW")
+ORD_outflights <- filter(chi_flights, ORIGIN == "ORD")
+```
+```{r}
+count(MDW_outflights, 'CARRIER')
+count(ORD_outflights, 'CARRIER')
+```
+YES, They agree.
+
+
